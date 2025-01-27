@@ -7,12 +7,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 
-# Word2VecDataset class
+# Word2VecDataset for CBOW
+import torch.nn.functional as F
+
 class Word2VecDataset(Dataset):
     def __init__(self, corpus, context_window, word_to_idx, idx_to_word):
         self.context_window = context_window
         self.word_to_idx = word_to_idx
         self.idx_to_word = idx_to_word
+        self.max_context_size = 2 * context_window
         self.data = self.preprocess_data(corpus)
 
     def preprocess_data(self, corpus):
@@ -24,26 +27,37 @@ class Word2VecDataset(Dataset):
                 context = tokens[max(0, i - self.context_window):i] + tokens[i + 1:i + 1 + self.context_window]
                 target_idx = self.word_to_idx[target]
                 context_idx = [self.word_to_idx[word] for word in context if word in self.word_to_idx]
-                for ctx in context_idx:
-                    data.append((target_idx, ctx))
+
+                if context_idx:
+                    data.append((context_idx, target_idx))
         return data
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        return self.data[idx]
+        context, target = self.data[idx]
+        context_tensor = torch.tensor(context, dtype=torch.long)
 
-# Word2VecModel class
+        # Pad or truncate context to the maximum context size
+        padded_context = F.pad(context_tensor,
+                               (0, self.max_context_size - len(context_tensor)),  # Pad at the end
+                               value=0)[:self.max_context_size]  # Truncate if necessary
+
+        return padded_context, torch.tensor(target, dtype=torch.long)
+
+
+
+# Word2VecModel for CBOW
 class Word2VecModel(nn.Module):
     def __init__(self, vocab_size, embedding_dim):
-        super(Word2VecModel, self).__init__()
+        super().__init__()
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
         self.output_layer = nn.Linear(embedding_dim, vocab_size)
 
-    def forward(self, target):
-        embed = self.embedding(target)
-        output = self.output_layer(embed)
+    def forward(self, context):
+        aggregated = self.embedding(context).mean(dim=1)
+        output = self.output_layer(aggregated)
         return output
 
 
@@ -54,13 +68,13 @@ def train(model, dataloader, criterion, optimizer, epochs):
 
     for epoch in range(epochs):
         total_loss = 0
-        for target, context in dataloader:
+        for context, target in dataloader:
             target = target.long()
             context = context.long()
 
             optimizer.zero_grad()
-            predictions = model(target)
-            loss = criterion(predictions, context)
+            predictions = model(context)
+            loss = criterion(predictions, target)
             loss.backward()
             optimizer.step()
 
@@ -88,47 +102,27 @@ def get_triplets(model, word_to_idx, idx_to_word, top_n=3):
 
     return triplets
 
-def check_word_similarity(model, word_to_idx, idx_to_word, word, top_n=3):
-    if word not in word_to_idx:
-        print(f"The word '{word}' is not in the vocabulary.")
-        return
-
-    embeddings = model.embedding.weight.data.cpu().numpy()
-    similarities = cosine_similarity(embeddings)
-
-    word_idx = word_to_idx[word]
-    similar_indices = np.argsort(similarities[word_idx])[::-1][:top_n + 1]
-    dissimilar_index = np.argsort(similarities[word_idx])[0]
-
-    similar_words = [idx_to_word[i] for i in similar_indices if i != word_idx][:top_n]
-    dissimilar_word = idx_to_word[dissimilar_index]
-
-    print(f"Word: {word}")
-    print(f"Similar Words: {similar_words}")
-    print(f"Dissimilar Word: {dissimilar_word}")
-
-
 if __name__ == "__main__":
-    print("Loading dataset...")
+
     file_path = "../tokenized_data.json"
     with open(file_path, "r", encoding="utf-8") as file:
         corpus = json.load(file)
-    print("Loading model...")
+
     vocab_file_path = "../vocabulary_86.txt"
 
     with open(vocab_file_path, "r", encoding="utf-8") as f:
-        vocab = [line.strip() for line in f]  # Read each line and strip whitespace
+        vocab = [line.strip() for line in f]
 
     # Create mappings
     word_to_idx = {word: idx for idx, word in enumerate(vocab)}
     idx_to_word = {idx: word for word, idx in word_to_idx.items()}
 
     # Hyperparameters
-    context_window = 3
-    embedding_dim = 20
+    context_window = 4
+    embedding_dim = 50
     batch_size = 1024
-    epochs = 70
-    learning_rate = 0.03
+    epochs = 170
+    learning_rate = 0.001
 
     # Dataset and DataLoader
     dataset = Word2VecDataset(corpus, context_window, word_to_idx=word_to_idx, idx_to_word=idx_to_word)
@@ -139,11 +133,11 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-    # Train the model
-    losses = train(model, dataloader, criterion, optimizer, epochs)
-
     # Save model checkpoint
     torch.save(model.state_dict(), "word2vec_checkpoint.pth")
+
+    # Train the model
+    losses = train(model, dataloader, criterion, optimizer, epochs)
 
     # Plot training loss
     plt.plot(range(1, epochs + 1), losses)
@@ -154,19 +148,8 @@ if __name__ == "__main__":
 
     # Generate triplets
     triplets = get_triplets(model, dataset.word_to_idx, dataset.idx_to_word)
-    for triplet in triplets[:5]:
+    for triplet in triplets[:20]:
         print("Word:", triplet[0])
         print("Similar:", triplet[1])
         print("Dissimilar:", triplet[2])
         print()
-
-    # Check similar and dissimilar words for a specific word
-    word_to_check = "happy"  # Replace with your word of choice
-    check_word_similarity(model, dataset.word_to_idx, dataset.idx_to_word, word_to_check, top_n=3)
-
-    word_to_check = "happy"  # Replace with your word of choice
-    check_word_similarity(model, dataset.word_to_idx, dataset.idx_to_word, word_to_check, top_n=3)
-    word_to_check = "depressed"  # Replace with your word of choice
-    check_word_similarity(model, dataset.word_to_idx, dataset.idx_to_word, word_to_check, top_n=3)
-    word_to_check = "little"  # Replace with your word of choice
-    check_word_similarity(model, dataset.word_to_idx, dataset.idx_to_word, word_to_check, top_n=3)
