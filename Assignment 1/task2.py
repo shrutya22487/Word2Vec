@@ -11,8 +11,8 @@ import json
 class Word2VecDataset(Dataset):
     def __init__(self, corpus, context_window, word_to_idx, idx_to_word):
         self.context_window = context_window
-        self.word_to_idx = word_to_idx  # Use prebuilt word-to-index mapping
-        self.idx_to_word = idx_to_word  # Use prebuilt index-to-word mapping
+        self.word_to_idx = word_to_idx
+        self.idx_to_word = idx_to_word
         self.data = self.preprocess_data(corpus)
 
     def preprocess_data(self, corpus):
@@ -109,11 +109,11 @@ def check_word_similarity(model, word_to_idx, idx_to_word, word, top_n=3):
 
 
 if __name__ == "__main__":
-
+    print("Loading dataset...")
     file_path = "../tokenized_data.json"
     with open(file_path, "r", encoding="utf-8") as file:
         corpus = json.load(file)
-
+    print("Loading model...")
     vocab_file_path = "../vocabulary_86.txt"
 
     with open(vocab_file_path, "r", encoding="utf-8") as f:
@@ -125,10 +125,10 @@ if __name__ == "__main__":
 
     # Hyperparameters
     context_window = 3
-    embedding_dim = 50
-    batch_size = 16
-    epochs = 250
-    learning_rate = 0.003
+    embedding_dim = 20
+    batch_size = 1024
+    epochs = 70
+    learning_rate = 0.03
 
     # Dataset and DataLoader
     dataset = Word2VecDataset(corpus, context_window, word_to_idx=word_to_idx, idx_to_word=idx_to_word)
@@ -164,3 +164,9 @@ if __name__ == "__main__":
     word_to_check = "happy"  # Replace with your word of choice
     check_word_similarity(model, dataset.word_to_idx, dataset.idx_to_word, word_to_check, top_n=3)
 
+    word_to_check = "happy"  # Replace with your word of choice
+    check_word_similarity(model, dataset.word_to_idx, dataset.idx_to_word, word_to_check, top_n=3)
+    word_to_check = "depressed"  # Replace with your word of choice
+    check_word_similarity(model, dataset.word_to_idx, dataset.idx_to_word, word_to_check, top_n=3)
+    word_to_check = "little"  # Replace with your word of choice
+    check_word_similarity(model, dataset.word_to_idx, dataset.idx_to_word, word_to_check, top_n=3)
