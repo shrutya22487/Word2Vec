@@ -6,6 +6,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+from tqdm import tqdm
 
 # Word2VecDataset for CBOW
 import torch.nn.functional as F
@@ -66,7 +67,7 @@ def train(model, dataloader, criterion, optimizer, epochs):
     model.train()
     losses = []
 
-    for epoch in range(epochs):
+    for epoch in tqdm(range(epochs)):
         total_loss = 0
         for context, target in dataloader:
             target = target.long()
@@ -82,7 +83,7 @@ def train(model, dataloader, criterion, optimizer, epochs):
 
         avg_loss = total_loss / len(dataloader)
         losses.append(avg_loss)
-        print(f"Epoch [{epoch + 1}/{epochs}], Loss: {avg_loss:.4f}")
+        # print(f"Epoch [{epoch + 1}/{epochs}], Loss: {avg_loss:.4f}")
 
     return losses
 
@@ -119,9 +120,9 @@ if __name__ == "__main__":
 
     # Hyperparameters
     context_window = 4
-    embedding_dim = 50
+    embedding_dim = 400
     batch_size = 1024
-    epochs = 170
+    epochs = 200
     learning_rate = 0.001
 
     # Dataset and DataLoader
@@ -144,6 +145,7 @@ if __name__ == "__main__":
     plt.xlabel("Epochs")
     plt.ylabel("Loss")
     plt.title("Training Loss")
+    plt.savefig("training_loss_task_2.png")
     plt.show()
 
     # Generate triplets
