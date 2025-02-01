@@ -16,7 +16,7 @@ vocabulary_size = 14000
 context_window = 2
 embedding_dim = 400
 batch_size = 1024
-epochs = 50
+epochs = 40
 lr = 0.001
 dropout_rate = 0.3
 word_index_mapping, index_word_mapping = {}, {}
@@ -93,12 +93,12 @@ class Word2VecModel(nn.Module):
         out = self.linear(aggregated)           # [batch_size, vocab_size]
         return out
 
-    def train(self, model, criterion, optimizer):
-        # model.train() # enable this if we r able to implement some dropout thingy
+    def train_model(self, model, criterion, optimizer):
         loss_list, val_loss = [], []
 
         for _ in tqdm(range(epochs)):
             total_loss = 0
+            model.train()  # enable this if we r able to implement some dropout thingy
 
             for target, context in train_dataloader:
                 target = target.long()
@@ -119,6 +119,7 @@ class Word2VecModel(nn.Module):
             print(f"Epoch {_ + 1}, Loss: {avg_loss}")
 
             total_loss = 0
+            model.eval()
 
             with torch.no_grad():
                 for target, context in val_dataloader:
@@ -171,24 +172,24 @@ class Word2VecModel(nn.Module):
             similar = []
 
             similar_indices = np.argsort(similarities[index])[::-1]
-
             similar_indices = [i for i in similar_indices if i != index][:3]
 
             for i in similar_indices:
-                similar.append(index_word_mapping[i])
+                similar.append((index_word_mapping[i], similarities[index][i]))
 
             dissimilar_index = np.argsort(similarities[index])[0]
-            dissimilar = index_word_mapping[dissimilar_index]
+            dissimilar = (index_word_mapping[dissimilar_index], similarities[index][dissimilar_index])
 
             triplets.append([word, similar, dissimilar])
 
         for triplet in triplets:
             print("Word:", triplet[0])
-            print("Similar:", triplet[1])
-            print("Dissimilar:", triplet[2])
+            print("Similar:", [(w, round(sim, 4)) for w, sim in triplet[1]])
+            print("Dissimilar:", (triplet[2][0], round(triplet[2][1], 4)))
             print()
 
         return triplets
+
 
 def get_data(vocab_size, split=0.9):
     task1.make_vocab_and_tokenize(vocab_size)
@@ -262,9 +263,9 @@ def get_triplet_for_word(self, word):
 
     return word, similar_words, (dissimilar_word, dissimilar_similarity)
 
-def run_Word2Vec(vocabulary_size_ = 14000, context_window_ = 2,embedding_dim_ = 400,batch_size_ = 1024,epochs_ = 50,lr_ = 0.001):
+def run_Word2Vec(vocabulary_size_ = 14000, context_window_ = 2,embedding_dim_ = 400,batch_size_ = 1024,epochs_ = 50,lr_ = 0.001, dropout_rate_ = 0.3):
 
-    global train_dataloader, val_dataloader, word_index_mapping, index_word_mapping, vocabulary_size, context_window, embedding_dim, batch_size, epochs, lr
+    global train_dataloader, val_dataloader, word_index_mapping, index_word_mapping, vocabulary_size, context_window, embedding_dim, batch_size, epochs, lr, dropout_rate
 
     vocabulary_size = vocabulary_size_
     context_window = context_window_
@@ -283,7 +284,7 @@ def run_Word2Vec(vocabulary_size_ = 14000, context_window_ = 2,embedding_dim_ = 
 
     print("Training...")
 
-    loss_list, val_loss = model.train(model, criterion, optimizer)
+    loss_list, val_loss = model.train_model(model, criterion, optimizer)
     plot(loss_list, val_loss)
 
     torch.save(model.state_dict(), "word2vec_checkpoint.pth")
@@ -293,4 +294,4 @@ def run_Word2Vec(vocabulary_size_ = 14000, context_window_ = 2,embedding_dim_ = 
     get_triplet_for_word(model, "is")
 
 if __name__ == "__main__":
-    run_Word2Vec()
+    run_Word2Vec( vocabulary_size_= vocabulary_size, context_window_= context_window, embedding_dim_= embedding_dim, batch_size_= batch_size, epochs_= epochs, lr_= lr, dropout_rate_=dropout_rate)
