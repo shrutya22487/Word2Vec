@@ -12,13 +12,13 @@ from tqdm import tqdm
 import torch.nn.functional
 import task1
 
-vocabulary_size = 14000
+vocabulary_size = 5000
 context_window = 2
-embedding_dim = 400
+embedding_dim = 500
 batch_size = 1024
 epochs = 40
 lr = 0.001
-dropout_rate = 0.3
+dropout_rate = 0
 word_index_mapping, index_word_mapping = {}, {}
 train_dataloader = []
 val_dataloader = []
@@ -116,7 +116,6 @@ class Word2VecModel(nn.Module):
             number_of_samples = len(train_dataloader)
             avg_loss = total_loss / number_of_samples
             loss_list.append(avg_loss)
-            print(f"Epoch {_ + 1}, Loss: {avg_loss}")
 
             total_loss = 0
             model.eval()
@@ -273,14 +272,14 @@ def run_Word2Vec(vocabulary_size_ = 14000, context_window_ = 2,embedding_dim_ = 
     batch_size = batch_size_
     epochs = epochs_
     lr = lr_
-
+    dropout_rate = dropout_rate_
     train_dataloader, val_dataloader, word_index_mapping, index_word_mapping = get_data(vocabulary_size)
 
     print("Loaded Data")
 
     model = Word2VecModel(vocabulary_size)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-5)
 
     print("Training...")
 
@@ -291,7 +290,9 @@ def run_Word2Vec(vocabulary_size_ = 14000, context_window_ = 2,embedding_dim_ = 
 
     model.get_triplets()
 
-    get_triplet_for_word(model, "is")
+    get_triplet_for_word(model, "happy")
+    get_triplet_for_word(model, "sad")
+    get_triplet_for_word(model, "punish")
 
 if __name__ == "__main__":
     run_Word2Vec( vocabulary_size_= vocabulary_size, context_window_= context_window, embedding_dim_= embedding_dim, batch_size_= batch_size, epochs_= epochs, lr_= lr, dropout_rate_=dropout_rate)
