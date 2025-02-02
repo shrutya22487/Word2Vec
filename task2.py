@@ -15,10 +15,10 @@ import task1
 
 ################################# HYPERPARAMETERS #########################################
 vocabulary_size = 14000
-context_window = 2
-embedding_dim = 500
+context_window = 1
+embedding_dim = 600
 batch_size = 1024
-epochs = 40
+epochs = 30
 lr = 0.001
 dropout_rate = 0
 word_index_mapping, index_word_mapping = {}, {}
@@ -100,20 +100,18 @@ class Word2VecModel(nn.Module):
 
         self.network = nn.Sequential(
             nn.Embedding(vocab_size, embedding_dim),
-            nn.Dropout(dropout_rate),
             nn.Linear(embedding_dim, vocab_size)
         )
 
         nn.init.xavier_uniform_(self.network[0].weight)
-        nn.init.xavier_uniform_(self.network[2].weight)
-        if self.network[2].bias is not None:
-            nn.init.zeros_(self.network[2].bias)
+        nn.init.xavier_uniform_(self.network[1].weight)
+        if self.network[1].bias is not None:
+            nn.init.zeros_(self.network[1].bias)
 
     # pushes the data forward to make predictions
     def forward(self, context):
         embedded = self.network[0](context).mean(dim = 1)
-        aggregated = self.network[1](embedded)
-        out = self.network[2](aggregated)
+        out = self.network[1](embedded)
         return out
 
     # Main training loop
@@ -203,8 +201,8 @@ class Word2VecModel(nn.Module):
             print("Dissimilar:", triplet[2][0], triplet[2][1] , "\n")
 
 # main data function, loads data from files and invokes the dataloader
-def get_data(vocab_size, split=0.85):
-    task1.make_vocab_and_tokenize(vocab_size)
+def get_data(vocab_size, split=0.9):
+    # task1.make_vocab_and_tokenize(vocab_size)
 
     file_path = "tokenized_data.json"
     with open(file_path, "r", encoding="utf-8") as f:
@@ -284,13 +282,13 @@ def get_triplet_for_word(model,word):
 
     triplet = [word, similar, dissimilar]
     triplets.append(triplet)
-
     for triplet in triplets:
-        print(triplet[0])
+        print(triplet[0], "\n")
         print("similar words:")
         for i in range(len(triplet[1])):
-            print(triplet[1][i][0], "with similarity: ", triplet[1][i][1])
-        print("Dissimilar:", triplet[2][0], triplet[2][1])
+            print("word: ", triplet[1][i][0], " ", "with similarity: ", triplet[1][i][1])
+        print("Dissimilar:", triplet[2][0], triplet[2][1], "\n")
+
 
 def run_Word2Vec(vocabulary_size_ = 14000, context_window_ = 2,embedding_dim_ = 400,batch_size_ = 1024,epochs_ = 50,lr_ = 0.001, dropout_rate_ = 0.3):
 
@@ -318,7 +316,7 @@ def run_Word2Vec(vocabulary_size_ = 14000, context_window_ = 2,embedding_dim_ = 
     criterion = nn.CrossEntropyLoss()
 
     #Reference -> https://pytorch.org/docs/stable/optim.html
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-5)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     print("Training...")
 
