@@ -21,6 +21,7 @@ lr = 0.001
 dropout_rate = 0
 word_index_mapping, index_word_mapping = {}, {}
 train_dataloader = []
+
 val_dataloader = []
 
 class Word2VecDataset(Dataset):
