@@ -15,10 +15,10 @@ import task1
 
 ################################# HYPERPARAMETERS #########################################
 vocabulary_size = 14000
-context_window = 1
-embedding_dim = 600
+context_window = 2
+embedding_dim = 300
 batch_size = 1024
-epochs = 30
+epochs = 50
 lr = 0.001
 dropout_rate = 0
 word_index_mapping, index_word_mapping = {}, {}
@@ -202,7 +202,7 @@ class Word2VecModel(nn.Module):
 
 # main data function, loads data from files and invokes the dataloader
 def get_data(vocab_size, split=0.9):
-    # task1.make_vocab_and_tokenize(vocab_size)
+    task1.make_vocab_and_tokenize(vocab_size)
 
     file_path = "tokenized_data.json"
     with open(file_path, "r", encoding="utf-8") as f:
