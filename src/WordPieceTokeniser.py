@@ -32,7 +32,7 @@ class WordPieceTokenizer:
 
     """
     Vocab Construction: 
-    1. Preprocess the data and store in dict the frequency of every word/token
+    1. Preprocess the content and store in dict the frequency of every word/token
     2. Create alphabets from the  by splitting each word into letters
     3. Create splits for every word i.e. storing letters of each word in a dictionary
     4. 
@@ -185,7 +185,7 @@ def make_vocab_and_tokenize(vocab_size):
                 tokenized_data[sentence_id] = tokens
                 sentence_id += 1
 
-    # Write the tokenized data to the output JSON file
+    # Write the tokenized content to the output JSON file
     with open(output_json_path, 'w') as f:
         json.dump(tokenized_data, f, indent=4)
 
@@ -219,6 +219,6 @@ if __name__ == "__main__":
                 tokenized_data[sentence_id] = tokens
                 sentence_id += 1
 
-    # Write the tokenized data to the output JSON file
+    # Write the tokenized content to the output JSON file
     with open(output_json_path, 'w') as f:
         json.dump(tokenized_data, f, indent=4)

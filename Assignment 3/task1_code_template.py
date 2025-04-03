@@ -201,9 +201,9 @@ def train_model():
 
 
 def main():
-    ## Load and preprocess data
+    ## Load and preprocess content
 
-    ## Create data loaders
+    ## Create content loaders
 
     ## Model hyperparameters
 
@@ -217,7 +217,7 @@ def main():
 
     ## Save the model
 
-    ## Evaluate on test data
+    ## Evaluate on test content
     with open("/content/shakespear_test.txt", "r") as f:
         lines_test = f.readlines()
 

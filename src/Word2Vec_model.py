@@ -38,7 +38,7 @@ class Word2VecDataset(Dataset):
         self.preprocessed_data = []
         self.corpus = corpus
 
-    # returns the number of items in data
+    # returns the number of items in content
     def __len__(self):
         return len(self.preprocessed_data)
 
@@ -108,7 +108,7 @@ class Word2VecModel(nn.Module):
         if self.network[1].bias is not None:
             nn.init.zeros_(self.network[1].bias)
 
-    # pushes the data forward to make predictions
+    # pushes the content forward to make predictions
     def forward(self, context):
         embedded = self.network[0](context).mean(dim = 1)
         out = self.network[1](embedded)
@@ -200,7 +200,7 @@ class Word2VecModel(nn.Module):
                 print("word: " ,triplet[1][i][0]," ", "with similarity: ", triplet[1][i][1])
             print("Dissimilar:", triplet[2][0], triplet[2][1] , "\n")
 
-# main data function, loads data from files and invokes the dataloader
+# main content function, loads content from files and invokes the dataloader
 def get_data(vocab_size, split=0.9):
     task1.make_vocab_and_tokenize(vocab_size)
 

@@ -198,11 +198,11 @@ class ShakespeareDataset(Dataset):
 
 
 def load_and_preprocess_data():
-    with open("/content/shakespear_train.txt", "r") as f:
+    with open("./content/shakespear_train.txt", "r") as f:
         lines_train = f.readlines()
-    with open("/content/shakespear_dev.txt", "r") as f:
+    with open("./content/shakespear_dev.txt", "r") as f:
         lines_dev = f.readlines()
-    with open("/content/shakespear_test.txt", "r") as f:
+    with open("./content/shakespear_test.txt", "r") as f:
         lines_test = f.readlines()
 
     # Tokenize training lines to build vocabulary
@@ -392,7 +392,7 @@ def train_model(model, train_dataset, val_dataset, tokenizer, tokenizer_inv, epo
     for epoch in range(epochs):
         model.train()
         epoch_loss = 0
-        # Shuffle training data
+        # Shuffle training content
         random.shuffle(train_data)
         for i in range(0, len(train_data), bs):
             batch = train_data[i:i + bs]
@@ -401,8 +401,12 @@ def train_model(model, train_dataset, val_dataset, tokenizer, tokenizer_inv, epo
             y = tokens[:, 1:]
             optimizer.zero_grad()
             logits, _ = model(X)
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1),
-                                   ignore_index=tokenizer["<PAD>"])
+            loss = F.cross_entropy(
+    logits.reshape(-1, logits.size(-1)),
+    y.reshape(-1),
+    ignore_index=tokenizer["<PAD>"]
+)
+
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
@@ -419,8 +423,12 @@ def train_model(model, train_dataset, val_dataset, tokenizer, tokenizer_inv, epo
                 X = tokens[:, :-1]
                 y = tokens[:, 1:]
                 logits, _ = model(X)
-                loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1),
-                                       ignore_index=tokenizer["<PAD>"])
+                loss = F.cross_entropy(
+    logits.reshape(-1, logits.size(-1)),
+    y.reshape(-1),
+    ignore_index=tokenizer["<PAD>"]
+)
+
                 val_loss += loss.item()
         avg_val_loss = val_loss / (len(val_data) / bs)
         val_losses.append(avg_val_loss)
@@ -438,7 +446,7 @@ def train_model(model, train_dataset, val_dataset, tokenizer, tokenizer_inv, epo
 #####################################
 
 def main():
-    # Load and preprocess data
+    # Load and preprocess content
     train_dataset, val_dataset, tokenizer, tokenizer_inv = load_and_preprocess_data()
     vocab_size = len(tokenizer)
 
@@ -468,10 +476,10 @@ def main():
     # Save the model
     torch.save(model.state_dict(), "transformer_lm.pth")
 
-    # Evaluate on test data
-    with open("/content/shakespear_test.txt", "r") as f:
+    # Evaluate on test content
+    with open("./content/shakespear_test.txt", "r") as f:
         lines_test = f.readlines()
-    # Create a dataset for test data (using the same preprocessing as training)
+    # Create a dataset for test content (using the same preprocessing as training)
     test_dataset = ShakespeareDataset(lines_test, tokenizer, max_len=MAX_LEN)
     test_losses = evaluate_losses([test_dataset[i] for i in range(len(test_dataset))], model, tokenizer, bs=32)
     test_ppl = math.exp(sum(test_losses) / len(test_losses))
@@ -526,11 +534,11 @@ def inference(model_path, test_file, tokenizer, tokenizer_inv, gen_tokens=10, te
 
 # Example usage of inference
 model_path = "transformer_lm.pth"
-test_file = "/content/shakespear_test.txt"
+test_file = "./content/shakespear_train.txt"
 # You must load these from your training pipeline; here we reload them for inference.
 _, _, tokenizer, tokenizer_inv = load_and_preprocess_data()
 generated_texts, ppl = inference(model_path, test_file, tokenizer, tokenizer_inv)
 print("Generated texts:")
-for text in generated_texts:
-    print(text)
+# for text in generated_texts:
+#     print(text)
 print(f"\nTest Perplexity: {ppl:.4f}")
