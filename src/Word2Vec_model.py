@@ -1,17 +1,16 @@
+import json
+import matplotlib.pyplot as plt
+import numpy as np
 import random
 import torch
 import torch.nn as nn
+import torch.nn.functional
 import torch.optim
+from sklearn.metrics.pairwise import cosine_similarity
 from torch.ao.nn.quantized import Dropout
 from torch.nn.functional import dropout
 from torch.utils.data import Dataset, DataLoader, random_split
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
-import matplotlib.pyplot as plt
-import json
 from tqdm import tqdm
-import torch.nn.functional
-import WordPieceTokeniser
 
 ################################# HYPERPARAMETERS #########################################
 vocabulary_size = 14000
@@ -32,6 +31,7 @@ class Word2VecDataset(Dataset):
     """"
     Is responsible for loading the dataset and provides functions to load, process and get items at a specific index
     """
+
     # Reference -> https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
     # Initialize
     def __init__(self, corpus):
@@ -70,7 +70,7 @@ class Word2VecDataset(Dataset):
 
                 # was giving for some words randomly thats why I added
                 if target not in word_index_mapping:
-                    print(target,"not found in vocabulary")
+                    print(target, "not found in vocabulary")
                     continue
 
                 tokens_before_word = tokens[max(0, i - context_window):i]
@@ -89,6 +89,7 @@ class Word2VecDataset(Dataset):
                     data.append((target_index, context_index))
 
         self.preprocessed_data = data
+
 
 ################################# MODEL #########################################
 
@@ -110,7 +111,7 @@ class Word2VecModel(nn.Module):
 
     # pushes the content forward to make predictions
     def forward(self, context):
-        embedded = self.network[0](context).mean(dim = 1)
+        embedded = self.network[0](context).mean(dim=1)
         out = self.network[1](embedded)
         return out
 
@@ -123,7 +124,6 @@ class Word2VecModel(nn.Module):
             model.train()  # enable this if we r able to implement some dropout thingy, this enables the training capability of the model
 
             for target, context in train_dataloader:
-
                 # target = target.long()
                 # context = context.long()
 
@@ -141,7 +141,7 @@ class Word2VecModel(nn.Module):
             loss_list.append(avg_loss)
 
             total_loss = 0
-            model.eval() # disable sthe dropout
+            model.eval()  # disable sthe dropout
 
             with torch.no_grad():
                 for target, context in val_dataloader:
@@ -157,7 +157,6 @@ class Word2VecModel(nn.Module):
 
         return loss_list, val_loss
 
-
     def get_triplets(self):
 
         """"
@@ -166,7 +165,7 @@ class Word2VecModel(nn.Module):
         """
         embeddings = self.network[0].weight.data.cpu().numpy()
 
-        #Reference -> https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.cosine_similarity.html
+        # Reference -> https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.cosine_similarity.html
         cos_similarity_mat = cosine_similarity(embeddings)
         indexes = []
         for i in range(5):
@@ -197,8 +196,9 @@ class Word2VecModel(nn.Module):
             print(triplet[0], "\n")
             print("similar words:")
             for i in range(len(triplet[1])):
-                print("word: " ,triplet[1][i][0]," ", "with similarity: ", triplet[1][i][1])
-            print("Dissimilar:", triplet[2][0], triplet[2][1] , "\n")
+                print("word: ", triplet[1][i][0], " ", "with similarity: ", triplet[1][i][1])
+            print("Dissimilar:", triplet[2][0], triplet[2][1], "\n")
+
 
 # main content function, loads content from files and invokes the dataloader
 def get_data(vocab_size, split=0.9):
@@ -214,7 +214,7 @@ def get_data(vocab_size, split=0.9):
         vocab = []
         for line in f:
             vocab.append(line.strip())
-    word_index_mapping,index_word_mapping = {},{}
+    word_index_mapping, index_word_mapping = {}, {}
 
     for i, j in enumerate(vocab):
         word_index_mapping[j] = i
@@ -249,17 +249,16 @@ def plot(loss_list, val_loss):
     plt.grid(visible=True)
     plt.show()
 
-def get_triplet_for_word(model,word):
 
+def get_triplet_for_word(model, word):
     """"
     to find triplets for a specific word
     """
 
-
     index_of_word = word_index_mapping[word]
     embeddings = model.network[0].weight.data.cpu().numpy()
 
-    #Reference -> https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.cosine_similarity.html
+    # Reference -> https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.cosine_similarity.html
 
     cos_similarity_mat = cosine_similarity(embeddings)
 
@@ -290,8 +289,8 @@ def get_triplet_for_word(model,word):
         print("Dissimilar:", triplet[2][0], triplet[2][1], "\n")
 
 
-def run_Word2Vec(vocabulary_size_ = 14000, context_window_ = 2,embedding_dim_ = 400,batch_size_ = 1024,epochs_ = 50,lr_ = 0.001, dropout_rate_ = 0.3):
-
+def run_Word2Vec(vocabulary_size_=14000, context_window_=2, embedding_dim_=400, batch_size_=1024, epochs_=50, lr_=0.001,
+                 dropout_rate_=0.3):
     """"
     Pipelining functions
     1. makes the vocabulary and tokenized dataset from task1
@@ -315,7 +314,7 @@ def run_Word2Vec(vocabulary_size_ = 14000, context_window_ = 2,embedding_dim_ = 
     model = Word2VecModel(vocabulary_size)
     criterion = nn.CrossEntropyLoss()
 
-    #Reference -> https://pytorch.org/docs/stable/optim.html
+    # Reference -> https://pytorch.org/docs/stable/optim.html
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     print("Training...")
@@ -333,5 +332,7 @@ def run_Word2Vec(vocabulary_size_ = 14000, context_window_ = 2,embedding_dim_ = 
     get_triplet_for_word(model, "politics")
     get_triplet_for_word(model, "him")
 
+
 if __name__ == "__main__":
-    run_Word2Vec( vocabulary_size_= vocabulary_size, context_window_= context_window, embedding_dim_= embedding_dim, batch_size_= batch_size, epochs_= epochs, lr_= lr, dropout_rate_=dropout_rate)
+    run_Word2Vec(vocabulary_size_=vocabulary_size, context_window_=context_window, embedding_dim_=embedding_dim,
+                 batch_size_=batch_size, epochs_=epochs, lr_=lr, dropout_rate_=dropout_rate)
