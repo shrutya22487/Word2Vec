@@ -198,11 +198,11 @@ class ShakespeareDataset(Dataset):
 
 
 def load_and_preprocess_data():
-    with open("./content/shakespear_train.txt", "r") as f:
+    with open("../Data/shakespear_train.txt", "r") as f:
         lines_train = f.readlines()
-    with open("./content/shakespear_dev.txt", "r") as f:
+    with open("../Data/shakespear_dev.txt", "r") as f:
         lines_dev = f.readlines()
-    with open("./content/shakespear_test.txt", "r") as f:
+    with open("./Data/shakespear_test.txt", "r") as f:
         lines_test = f.readlines()
 
     # Tokenize training lines to build vocabulary
@@ -534,7 +534,7 @@ def inference(model_path, test_file, tokenizer, tokenizer_inv, gen_tokens=10, te
 
 # Example usage of inference
 model_path = "transformer_lm.pth"
-test_file = "./content/shakespear_train.txt"
+test_file = "../Data/shakespear_train.txt"
 # You must load these from your training pipeline; here we reload them for inference.
 _, _, tokenizer, tokenizer_inv = load_and_preprocess_data()
 generated_texts, ppl = inference(model_path, test_file, tokenizer, tokenizer_inv)
